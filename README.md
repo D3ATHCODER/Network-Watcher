@@ -19,3 +19,9 @@ socket: Used to determine the IP address and port number of your computer.
 pywifi: A library that scans for nearby Wi-Fi networks, similar to how your computer shows available networks.
 Python: The programming language used to write all the code that powers this app.
 sys: Helps handle system-specific tasks, like properly closing the app when you exit.
+
+Login Screen
+![image](https://github.com/user-attachments/assets/c23697d7-aafc-4351-8de8-488668ba9a6f)
+
+Main Screen
+![image](https://github.com/user-attachments/assets/b25e3e33-c87b-49e0-be52-284a0708d557)
