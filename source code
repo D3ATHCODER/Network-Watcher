@@ -1,0 +1,150 @@
+import sys
+import psutil
+import socket
+import pywifi
+import time
+import tkinter as tk
+from tkinter import messagebox
+
+class LoginWindow(tk.Tk):
+    def __init__(self, main_window):
+        super().__init__()
+        self.main_window = main_window
+        self.title("Login")
+        self.geometry("400x200")
+        
+        tk.Label(self, text="Username:").pack(pady=5)
+        self.user_input = tk.Entry(self)
+        self.user_input.pack(pady=5)
+
+        tk.Label(self, text="Password:").pack(pady=5)
+        self.password_input = tk.Entry(self, show="*")
+        self.password_input.pack(pady=5)
+
+        tk.Button(self, text="Login", command=self.check_login).pack(pady=20)
+
+    def check_login(self):
+        username = self.user_input.get()
+        password = self.password_input.get()
+
+        if username == "user" and password == "password":
+            self.main_window.deiconify()
+            self.destroy()
+        else:
+            messagebox.showwarning("Login Failed", "Invalid username or password")
+
+class NetworkMonitor(tk.Tk):
+    def __init__(self, login_window):
+        super().__init__()
+        self.login_window = login_window
+        self.withdraw()
+        self.title("Network Monitoring")
+        self.geometry("400x600")
+
+        self.port_label = tk.Label(self, text="")
+        self.port_label.pack(pady=5)
+
+        self.ip_label = tk.Label(self, text="")
+        self.ip_label.pack(pady=5)
+
+        self.network_label = tk.Label(self, text="")
+        self.network_label.pack(pady=5)
+
+        self.available_networks_label = tk.Label(self, text="")
+        self.available_networks_label.pack(pady=5)
+
+        self.cpu_label = tk.Label(self, text="")
+        self.cpu_label.pack(pady=5)
+
+        self.mem_label = tk.Label(self, text="")
+        self.mem_label.pack(pady=5)
+
+        self.upload_speed_label = tk.Label(self, text="")
+        self.upload_speed_label.pack(pady=5)
+
+        self.download_speed_label = tk.Label(self, text="")
+        self.download_speed_label.pack(pady=5)
+
+        self.refresh_button = tk.Button(self, text="Refresh", command=self.refresh_data)
+        self.refresh_button.pack(pady=20)
+
+        self.logout_button = tk.Button(self, text="Logout", command=self.logout)
+        self.logout_button.pack(pady=10)
+
+        self.loading_label = tk.Label(self, text="", fg="blue")
+        self.loading_label.pack(pady=5)
+
+        self.refresh_data()
+
+    def refresh_data(self):
+        # Display loading message and disable the refresh button
+        self.loading_label.config(text="Refreshing data, please wait...")
+        self.refresh_button.config(state=tk.DISABLED)
+        self.update_idletasks()
+
+        # Simulate data fetching delay
+        time.sleep(1)
+
+        # Get port number
+        port_number = self.get_port_number()
+        self.port_label.config(text=f"Port Number: {port_number}")
+
+        # Get IP address
+        ip_address = socket.gethostbyname(socket.gethostname())
+        self.ip_label.config(text=f"IP Address: {ip_address}")
+
+        # Get device name
+        network_name = socket.gethostname()
+        self.network_label.config(text=f"Device Name: {network_name}")
+
+        # Get available Wi-Fi networks
+        available_networks = self.get_available_networks()
+        self.available_networks_label.config(text=f"Available Networks: {', '.join(available_networks)}")
+
+        # Get CPU and memory usage
+        cpu_percent = psutil.cpu_percent(interval=1)
+        mem_info = psutil.virtual_memory()
+        self.cpu_label.config(text=f"CPU Usage: {cpu_percent}%")
+        self.mem_label.config(text=f"Memory Usage: Total: {mem_info.total} bytes, Used: {mem_info.used} bytes")
+
+        # Get network speed (upload/download)
+        upload_speed, download_speed = self.get_network_speed()
+        self.upload_speed_label.config(text=f"Upload Speed: {upload_speed} bytes/sec")
+        self.download_speed_label.config(text=f"Download Speed: {download_speed} bytes/sec")
+
+        # Clear loading message and re-enable the refresh button
+        self.loading_label.config(text="")
+        self.refresh_button.config(state=tk.NORMAL)
+
+    def get_port_number(self):
+        temp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        temp_socket.bind(('localhost', 0))
+        port_number = temp_socket.getsockname()[1]
+        temp_socket.close()
+        return port_number
+
+    def get_available_networks(self):
+        wifi = pywifi.PyWiFi()
+        iface = wifi.interfaces()[0]
+        iface.scan()
+        time.sleep(2)  # Wait for scan results
+        scan_results = iface.scan_results()
+        return [result.ssid for result in scan_results if result.ssid]
+
+    def get_network_speed(self):
+        network_info = psutil.net_io_counters()
+        upload_speed = network_info.bytes_sent
+        download_speed = network_info.bytes_recv
+        return upload_speed, download_speed
+
+    def logout(self):
+        self.withdraw()
+        self.login_window = LoginWindow(self)
+        self.login_window.mainloop()
+
+def main():
+    login_window = LoginWindow(main_window=NetworkMonitor(login_window=None))
+    login_window.mainloop()
+
+if __name__ == "__main__":
+    main()
